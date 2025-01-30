@@ -6,47 +6,65 @@ import { useAppSelector } from "@/hooks/useAppSelector";
 import { Message } from "@/models/Message";
 import { Fragment, useEffect, useState } from "react";
 import { voteGame } from "@/redux/slices/gameSlices";
+
 export default function Game() {
 
-    const [userTurn, setUserTurn] = useState(false);
-    const [gameId, setGameId] = useState("");
-    const [userGameId, setUserGameId] = useState("");
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [ws, setWs] = useState<WebSocket | null>();
-    const [againstBot, setAgainstBot] = useState(false);
-    const [message, setMessage] = useState("");
-    const [gameState, setGameState] = useState("");
-    const { error, status } = useAppSelector(state => state.game);  
+    const { error, status } = useAppSelector(state => state.game);
+    const { user } = useAppSelector(state => state.auth);
     const dispatch = useAppDispatch();
 
+    const [ws, setWs] = useState<WebSocket | null>();
+
+    // Gestion partie
+    const [gameState, setGameState] = useState("");
+    const [gameId, setGameId] = useState("");
+    const [userGameId, setUserGameId] = useState("");
+    const [userTurn, setUserTurn] = useState(false);
+    const [againstBot, setAgainstBot] = useState(false);
+
+    const [message, setMessage] = useState("");
+    const [messages, setMessages] = useState<Message[]>([]);
+
+    // Ecouter pour savoir si l'utilisateur veut quitter la page
     useEffect(() => {
         if(gameId) {
-            // listen to user trying to leave the page. If trying to leave, ask if they want to leave
             window.addEventListener("beforeunload", (e) => {
                 e.preventDefault();
-                e.returnValue = '';
                 ws?.close();
                 return false;
             });
         } 
     }, [gameId]);
 
+    // Connexion WebSocket
     useEffect(() => {
-        const ws = new WebSocket("ws://localhost:8080");
+        if(!user) return;
+        const ws = new WebSocket(`ws://localhost:8080?token=${(user as any).token}`);
         ws.onopen = () => {
             setGameState("waiting");
-            console.log("Connected to server");
         };
         ws.onmessage = (message) => {
             const data = JSON.parse(message.data);
+
+            // Début de partie
             if(data.type === "start_game") {
+                // Mettre à jour les states
                 setGameId(data.gameId);
                 setUserGameId(data.userId);
+                setMessages([]);
+                
                 if(data.isFirst) setUserTurn(true);
                 if(data.againstBot) { setUserTurn(true); setAgainstBot(true); }
-                setMessages([]);
+                
                 setGameState("in_progress");
             } else if(data.type === "message_human" || data.type === "message_bot") {
+               
+                console.log(data);
+                setMessages((prev) => [...prev, {
+                    content: data.content.content,
+                    userId:  data.content.userId
+                }]);
+
                 if(data.isOver === true) {
                     setUserTurn(false);
                     setGameState("game_over");
@@ -54,23 +72,15 @@ export default function Game() {
                         setGameState("game_vote");
                     }, 5000);
                 } else {
-                    if(againstBot) {
-                        setMessages((prev) => [...prev, {
-                            content: data.content,
-                            userId: data.userId
-                        }]);
-                        setUserTurn(true);
-                    } else {
-                        setMessages((prev) => [...prev, {
-                            content: data.content.content,
-                            userId: data.content.userId
-                        }]);
-                        setUserTurn((prevTurn) => !prevTurn);
-                    }
+                    againstBot ? setUserTurn(true) : setUserTurn((prevTurn) => !prevTurn);
                 }
             } 
         }
         setWs(ws);
+
+        return () => {
+            ws.close();
+        };
     }, []);
 
     const handleSendMessage = () => {
@@ -101,7 +111,7 @@ export default function Game() {
     };
 
     const handleVote = (isHuman: boolean) => {
-        dispatch(voteGame({ gameId, isHuman }));
+        dispatch(voteGame({ gameId, vote: isHuman }));
     }
 
     return (
@@ -172,8 +182,8 @@ export default function Game() {
                             <p className="text-white text-3xl font-bold text-center">Vote</p>
                             <p className="text-white text-center text-lg">Vous avez joué contre:</p>
                             <div className="flex flex-col justify-center items-center">
-                                <Button label="UN JOUEUR" className="mt-4 w-full font-semibold" onClick={() => setGameState("waiting")} />
-                                <Button label="UN BOT" className="mt-4 bg-secondary w-full text-white font-semibold" onClick={() => setGameState("waiting")} />
+                                <Button label="UN JOUEUR" className="mt-4 w-full font-semibold" onClick={() => handleVote(true)} />
+                                <Button label="UN BOT" className="mt-4 bg-secondary w-full text-white font-semibold" onClick={() => handleVote(false)} />
                             </div>
                                 
                             
@@ -202,10 +212,10 @@ export default function Game() {
                                 disabled={!userTurn}
                             >Send</button>
                         </div>
+                    </div>
+                    
+                    
                 </div>
-                
-                
-            </div>
             <div className="relative col-span-3 min-h-screen">
                 <div className={
                     `absolute w-full bottom-0 bg-secondary transition-all]`

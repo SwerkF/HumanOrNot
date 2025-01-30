@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import GameService from "@/services/gameService";
-import { toast } from "react-toastify";
 
 const gameService = new GameService();
 
@@ -64,6 +63,7 @@ const gameSlice = createSlice({
             })
             .addCase(voteGame.fulfilled, (state, action) => {
                 state.status = "succeeded";
+                state.games = action.payload;
             })
             .addCase(voteGame.rejected, (state, action) => {
                 state.status = "failed";

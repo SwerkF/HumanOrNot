@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import UserService from "@/services/userService";
 import { toast } from "react-toastify";
+import Cookies from "js-cookie";
 
 const userService = new UserService();
 
@@ -12,6 +13,9 @@ export const login = createAsyncThunk(
             if (response.error) {
                 return rejectWithValue(response.error);
             }
+
+            Cookies.set("token", response.token);
+
             return response;
         } catch (error) {
             return rejectWithValue(error);
@@ -21,9 +25,9 @@ export const login = createAsyncThunk(
 
 export const register = createAsyncThunk(
     "auth/register",
-    async ({ email, password, username }: { email: string; password: string; username: string }, { rejectWithValue }) => {
+    async ({  username, email, password }: { username: string; email: string; password: string; }, { rejectWithValue }) => {
         try {
-            const response = await userService.register(email, password, username);
+            const response = await userService.register(username, email, password);
             if (response.error) {
                 return rejectWithValue(response.error);
             }
@@ -40,6 +44,7 @@ const authSlice = createSlice({
         user: null,
         isAuth: false,
         error: "",
+        token: "",
         status: "idle",
     },
     reducers: {
@@ -62,6 +67,7 @@ const authSlice = createSlice({
             .addCase(login.fulfilled, (state, action) => {
                 state.status = "succeeded";
                 state.user = action.payload;
+                state.token = action.payload.token;
                 state.isAuth = true;
                 state.error = "";
                 toast.success("Connexion réussie");
