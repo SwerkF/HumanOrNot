@@ -10,28 +10,40 @@ dotenv.config();
 
 // Global route to get all games
 router.get('/', async (req, res) => {
-    try {
-        const games = await Game.find();
-        res.json(games);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
 
-// Route to get games by user
-router.get('/user/:userId', async (req, res) => {
+    const token = decodeJwt(req.headers.authorization.split(' ')[1]);
+    if(!token) {
+        return res.status(401).json({ message: 'Accès refusé, token manquant.' });
+    }
+
+    const userId = token.userId;
+
     try {
-        const userId = req.params.userId;
-        const games = await Game.find({ users: userId });
-        res.json(games);
+        const games = await Game.find({ "players.id": userId });
+        const formattedGames = games.map(game => {
+            const userPlayer = game.players.find(player => player?.id?.toString() === userId);
+            return {
+                createdAt: game.createdAt,
+                messageCount: game.messages.length,
+                vote: userPlayer?.vote ?? 0,
+                hadBot: game.hadBot
+            };
+        });
+        res.json({ data: formattedGames });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+
 });
 
 router.post('/vote', auth, async (req, res) => {
     try {
         const token = req.header('Authorization');
+
+        if(!token) {
+            return res.status(401).json({ message: "Accès refusé, token manquant" });
+        }
+
         const decoded = decodeJwt(token.split(' ')[1]);
 
         const { gameId, vote } = req.body;
@@ -39,7 +51,7 @@ router.post('/vote', auth, async (req, res) => {
         const game = await Game.findOne({ gameId: gameId });
 
         if(!game) {
-            return res.status(404).json({ message: 'Game not found' });
+            return res.status(404).json({ message: "La partie n'existe pas." });
         }
 
         let player = game.players.find(player => {
@@ -47,7 +59,7 @@ router.post('/vote', auth, async (req, res) => {
         });
 
         if(!player) {
-            return res.status(404).json({ message: 'Player not found' });
+            return res.status(404).json({ message: "Joueur non trouvé." });
         }
 
         if(vote === true && game.hadBot === true) {
@@ -64,25 +76,9 @@ router.post('/vote', auth, async (req, res) => {
 
         res.json(game);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "Erreur serveur." });
     }
 })
-
-// Route to get games grouped by CreatedAt for a user
-router.get('/user/:userId/grouped', async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        const games = await Game.find({ users: userId });
-        const groupedGames = games.reduce((acc, game) => {
-            const date = game.createdAt.toISOString().split('T')[0];
-            (acc[date] = acc[date] || []).push(game);
-            return acc;
-        }, {});
-        res.json(groupedGames);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
 
 const decodeJwt = (token) => {
     try {

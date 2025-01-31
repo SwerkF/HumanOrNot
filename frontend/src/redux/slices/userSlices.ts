@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import UserService from "@/services/userService";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
+import { Error } from "@/models/Error";
 
 const userService = new UserService();
 
@@ -13,12 +14,16 @@ export const login = createAsyncThunk(
             if (response.error) {
                 return rejectWithValue(response.error);
             }
+            if (response.message) {
+                return rejectWithValue(response.message);
+            }
 
             Cookies.set("token", response.token);
 
             return response;
-        } catch (error) {
-            return rejectWithValue(error);
+        } catch (error: unknown) {
+            const err = error as Error;
+            return rejectWithValue(err.message);
         }
     }
 );
@@ -31,9 +36,13 @@ export const register = createAsyncThunk(
             if (response.error) {
                 return rejectWithValue(response.error);
             }
+            if (response.message) {
+                return rejectWithValue(response.message);
+            }
             return response;
-        } catch (error) {
-            return rejectWithValue(error);
+        } catch (error: unknown) {
+            const err = error as Error;
+            return rejectWithValue(err.message);
         }
     }
 )
@@ -41,7 +50,7 @@ export const register = createAsyncThunk(
 const authSlice = createSlice({
     name: "auth",
     initialState: {
-        user: null,
+        user: "",
         isAuth: false,
         error: "",
         token: "",
@@ -49,7 +58,7 @@ const authSlice = createSlice({
     },
     reducers: {
         logout: (state) => {
-            state.user = null;
+            state.user = "";
             state.isAuth = false;
         },
         setError: (state, action) => {

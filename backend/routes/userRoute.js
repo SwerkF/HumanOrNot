@@ -13,12 +13,12 @@ router.post("/login", async (req, res) => {
     try {
         const user = await User.findOne({ email, password });
         if (!user) {
-            return res.status(401).json({ message: "Invalid credentials" });
+            return res.status(401).json({ message: "Identifiants invalides." });
         }
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
         res.json({ token });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "Erreur serveur." });
     }
 });
 
@@ -30,7 +30,7 @@ router.post("/register", async (req, res) => {
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
         res.json({ token });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: "Erreur serveur." });
     }
 });
 

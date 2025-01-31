@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useEffect, useState } from 'react';
 import { register } from '@/redux/slices/userSlices';
-import { useNavigate } from 'react-router-dom';
+
 import Input from '@/components/Input/Input';
 import Button from '@/components/Button/Button';
 
@@ -10,9 +12,9 @@ export default function Register() {
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
     const { isAuth, error, status } = useAppSelector((state) => state.auth);
     const dispatch = useAppDispatch();
-
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -44,7 +46,7 @@ export default function Register() {
             </form>
             <p className="text-white text-md mb-5">
                 Vous avez déjà un compte?{' '}
-                <a className="text-primary cursor-pointer hover:text-secondary transition-colors" href="/login">
+                <a className="text-primary cursor-pointer hover:text-secondary transition-colors" onClick={() => navigate("/login")}>
                     Se connecter
                 </a>
             </p>

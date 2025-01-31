@@ -1,16 +1,18 @@
-import Button from "@/components/Button/Button";
-import Input from "@/components/Input/Input";
-import Loader from "@/components/Loader/Loader";
+import { Fragment, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { useAppDispatch } from "@/hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/useAppSelector";
-import { Message } from "@/models/Message";
-import { Fragment, useEffect, useState } from "react";
 import { voteGame } from "@/redux/slices/gameSlices";
+import { Message } from "@/models/Message";
+
+import Button from "@/components/Button/Button";
+import Loader from "@/components/Loader/Loader";
+import { RootState } from "@/redux/store";
 
 export default function Game() {
 
-    const { error, status } = useAppSelector(state => state.game);
-    const { user } = useAppSelector(state => state.auth);
+    const { user } = useAppSelector((state: RootState) => state.auth);
     const dispatch = useAppDispatch();
 
     const [ws, setWs] = useState<WebSocket | null>();
@@ -24,6 +26,8 @@ export default function Game() {
 
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState<Message[]>([]);
+
+    const navigate = useNavigate();
 
     // Ecouter pour savoir si l'utilisateur veut quitter la page
     useEffect(() => {
@@ -39,7 +43,7 @@ export default function Game() {
     // Connexion WebSocket
     useEffect(() => {
         if(!user) return;
-        const ws = new WebSocket(`ws://localhost:8080?token=${(user as any).token}`);
+        const ws = new WebSocket(`${import.meta.env.VITE_WEBSCOKET_BASE_URL}?token=${user}`);
         ws.onopen = () => {
             setGameState("waiting");
         };
@@ -112,12 +116,13 @@ export default function Game() {
 
     const handleVote = (isHuman: boolean) => {
         dispatch(voteGame({ gameId, vote: isHuman }));
+        setGameState("game_end");
     }
 
     return (
         <div className="min-h-screen grid grid-cols-12">
             <div className="col-span-3"></div>
-            <div className="col-span-6 relative flex flex-col min-h-full border-x border-zinc-600">
+            <div className="col-span-6 relative flex flex-col min-h-full max-h-full border-x border-zinc-600 overflow-y-auto">
                 <div className="h-[50px] border-b border-zinc-600 flex flex-row items-center">
                     <h1 className="text-3xl font-bold text-white ml-2">Chat</h1>
                 </div>
@@ -164,13 +169,13 @@ export default function Game() {
                         ))}
 
                         {!userTurn && gameState === "in_progress" && [
-                            <div className="w-full p-2 text-zinc-700 min-h-[100px] flex flex-row items-center items-center">
+                            <div className="w-full p-2 text-zinc-700 min-h-[100px] flex flex-row items-center">
                                 En attente de l'utilisateur ...
                             </div>
                         ]}
 
                         {gameState === "game_over" && (
-                            <div className="w-full p-2 text-zinc-700 min-h-[100px] flex flex-row items-center items-center">
+                            <div className="w-full p-2 text-zinc-700 min-h-[100px] flex flex-row items-center">
                                 Fin de partie.
                             </div>
                         )}
@@ -190,32 +195,31 @@ export default function Game() {
                         </div>
                     </div>
                 ) : (
-                    <div className="w-full p-2 text-zinc-700 min-h-[100px] flex flex-row items-center items-center">
-                        Fin du jeu.
+                    <div className="p-2 text-zinc-700 h-full w-full flex flex-col items-center justify-center">
+                        <h1 className="text-3xl font-bold text-white mb-2">Merci d'avoir joué !</h1>
+                        <p className="text-white text-center">Vous avez joué contre {againstBot ? "un bot" : "un joueur"} !</p>
+                        <button className="w-1/4 p-2 bg-primary hover:bg-secondary hover:text-white focus:border-primary focus:outline-none transition-all" onClick={() => navigate("/")}>Retour au menu</button>
                     </div>
                 )}
 
                 <div className="fixed bottom-0 w-1/2">
                     
-                    <div className="flex flex-row border-t border-zinc-600">
+                    <form className={`flex flex-row border-t ${userTurn ? "border-secondary" : " border-zinc-600"}`} onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}>
                         <input 
-                                className="w-full p-2 bg-transparent border border-zicn-800 text-white rounded outline-none border-transparent"
-                                type="text" 
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                disabled={!userTurn}
-                            />
-                            <button 
-                                className="w-1/4 p-2 bg-primary hover:bg-secondary hover:text-white focus:border-primary focus:outline-none transition-all" 
-                                type="submit"
-                                onClick={handleSendMessage}    
-                                disabled={!userTurn}
-                            >Send</button>
-                        </div>
-                    </div>
-                    
-                    
+                            className="w-full p-2 bg-black border border-zicn-800 text-white rounded outline-none border-transparent"
+                            type="text" 
+                            value={message}
+                            onChange={(e) => setMessage(e.target.value)}
+                            disabled={!userTurn}
+                        />
+                        <button 
+                            className="w-1/4 p-2 bg-primary hover:bg-secondary hover:text-white focus:border-primary focus:outline-none transition-all" 
+                            type="submit"
+                            disabled={!userTurn}
+                        >Send</button>
+                    </form>
                 </div>
+            </div>
             <div className="relative col-span-3 min-h-screen">
                 <div className={
                     `absolute w-full bottom-0 bg-secondary transition-all]`

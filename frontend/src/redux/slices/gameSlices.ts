@@ -3,14 +3,21 @@ import GameService from "@/services/gameService";
 
 const gameService = new GameService();
 
-const getGames = createAsyncThunk(
+export const getGames = createAsyncThunk(
     "game/getGames",
     async (_, { rejectWithValue }) => {
         try {
             const response = await gameService.getGames();
+            if (response.error) {
+                return rejectWithValue(response.error);
+            }
+            if (response.message) {
+                return rejectWithValue(response.message);
+            }
             return response.data;
-        } catch (error) {
-            return rejectWithValue(error);
+        } catch (error: unknown) {
+            const err = error as Error;
+            return rejectWithValue(err.message);
         }
     }
 )
@@ -20,9 +27,16 @@ export const voteGame = createAsyncThunk(
     async ({ gameId, vote }: { gameId: string; vote: boolean }, { rejectWithValue }) => {
         try {
             const response = await gameService.voteGame(gameId, vote);
+            if (response.error) {
+                return rejectWithValue(response.error);
+            }
+            if (response.message) {
+                return rejectWithValue(response.message);
+            }
             return response.data;
-        } catch (error) {
-            return rejectWithValue(error);
+        } catch (error: unknown) {
+            const err = error as Error;
+            return rejectWithValue(err.message);
         }
     }
 )
@@ -30,7 +44,7 @@ export const voteGame = createAsyncThunk(
 const gameSlice = createSlice({
     name: "game",
     initialState: {
-        games: null,
+        games: [],
         error: "",
         status: "idle",
     },
@@ -61,9 +75,8 @@ const gameSlice = createSlice({
             .addCase(voteGame.pending, (state) => {
                 state.status = "loading";
             })
-            .addCase(voteGame.fulfilled, (state, action) => {
+            .addCase(voteGame.fulfilled, (state) => {
                 state.status = "succeeded";
-                state.games = action.payload;
             })
             .addCase(voteGame.rejected, (state, action) => {
                 state.status = "failed";
