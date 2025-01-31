@@ -126,7 +126,7 @@ wss.on("connection", (ws, req) => {
         game.messages.push(message);
 
         // Vérifier si la partie est terminée
-        let isGameOver = game.messages.length === 3 ? true : false;
+        let isGameOver = game.messages.length === 5 ? true : false;
 
         // Si le message provient d'un être humain
         if (message.type === "message_human") {
@@ -165,7 +165,7 @@ wss.on("connection", (ws, req) => {
 					res = res.replace(/<think>.*?<\/think>/gs, "");
 
 					// Vérifier si la partie est terminée
-					const isGameOver = game.messages.length === 3 ? true : false;
+					const isGameOver = game.messages.length === 5 ? true : false;
 
 					// Envoyer le message aux joueurs
 					game.wsUserOne.ws.send(JSON.stringify({
