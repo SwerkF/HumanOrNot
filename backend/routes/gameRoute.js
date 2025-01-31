@@ -55,7 +55,7 @@ router.post('/vote', auth, async (req, res) => {
         }
 
         let player = game.players.find(player => {
-            return player.id.toString() === decoded.userId;
+            return player.id && player.id.toString() === decoded.userId;
         });
 
         if(!player) {
@@ -76,6 +76,7 @@ router.post('/vote', auth, async (req, res) => {
 
         res.json(game);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: "Erreur serveur." });
     }
 })

@@ -9,6 +9,7 @@ import { Message } from "@/models/Message";
 import Button from "@/components/Button/Button";
 import Loader from "@/components/Loader/Loader";
 import { RootState } from "@/redux/store";
+import { User } from "@/models/User";
 
 export default function Game() {
 
@@ -43,13 +44,13 @@ export default function Game() {
     // Connexion WebSocket
     useEffect(() => {
         if(!user) return;
-        const ws = new WebSocket(`${import.meta.env.VITE_WEBSCOKET_BASE_URL}?token=${user}`);
+        const ws = new WebSocket(`${import.meta.env.VITE_WEBSCOKET_BASE_URL}?token=${(user as User).token}`);
         ws.onopen = () => {
             setGameState("waiting");
         };
         ws.onmessage = (message) => {
             const data = JSON.parse(message.data);
-
+            console.log(data);
             // Début de partie
             if(data.type === "start_game") {
                 // Mettre à jour les states
@@ -88,7 +89,11 @@ export default function Game() {
     }, []);
 
     const handleSendMessage = () => {
-       if(!message || !gameId || !userGameId) return;
+
+       if(!message || !gameId || !userGameId) {
+        console.log("Message, gameId or userGameId is missing");
+        return console.log(message, gameId, userGameId);
+       };
        if(againstBot) {
             ws?.send(JSON.stringify({
                 type: "message_bot",

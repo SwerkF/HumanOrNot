@@ -78,8 +78,8 @@ wss.on("connection", (ws, req) => {
 
         // Mettre en attente le joueur si aucun joueur n'est en attente
         waitingPlayer = {
-			ws,
-			id: userId
+			ws: ws,
+			userId: userId
 		};
         ws.send(JSON.stringify({
             type: "waiting"
@@ -89,14 +89,17 @@ wss.on("connection", (ws, req) => {
     // Si aucun joueur ne s'est connecté en 5 secondes, créer une partie avec un bot
     setTimeout(() => {
         // Si le joueur est encore en attente, créer une partie
-        if (waitingPlayer.ws === ws) {
+        if (waitingPlayer && waitingPlayer.ws === ws) {
             // Initialisation de la partie
             let gameId = randomIdGenerator();
             games[gameId] = {
-                wsUserOne: waitingPlayer,
+                wsUserOne: {
+                    ws: ws,
+                    id: userId
+                },
                 wsUserTwo: null,
                 messages: [],
-                userId: userId
+                id: waitingPlayer.userId
             };
 
             // Envoyer le message de début de partie au joueur
@@ -127,7 +130,6 @@ wss.on("connection", (ws, req) => {
 
         // Si le message provient d'un être humain
         if (message.type === "message_human") {
-
             // Envoyer le message aux joueurs
             game.wsUserOne.ws.send(JSON.stringify({
                 type: "message_human",
@@ -196,15 +198,22 @@ wss.on("connection", (ws, req) => {
 			const messagesS = await Message.insertMany(prepareMessages);
 
 			let gameInfo = games[message.gameId];
+            console.log("GAME INFO", gameInfo);
+            console.log("USER ONE ID", gameInfo.wsUserOne.id);
+            console.log("USER TWO ID", gameInfo.wsUserTwo ? gameInfo.wsUserTwo.id : null);
+            
 			const gameS = await Game.create({
 				gameId: message.gameId,
-				players: [{
-					id: gameInfo.userId,
-					vote: null
-				}, gameInfo.wsUserTwo ? {
-					id: gameInfo.wsUserTwo.id,
-					vote: null
-				} : null],
+				players: [
+                    {
+                        id: gameInfo.wsUserOne.id,
+                        vote: null
+                    }, 
+                    {
+                        id: gameInfo.wsUserTwo ? gameInfo.wsUserTwo.id : null,
+                        vote: null
+                    }
+                ],
 				messages: messagesS,
 				hadBot: gameInfo.wsUserTwo ? false : true
 			})
