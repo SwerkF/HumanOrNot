@@ -22,4 +22,17 @@ api.interceptors.request.use(
   }
 );
 
+api.interceptors.response.use(
+  async (response) => {
+    if (response.data.token) {
+      await AsyncStorage.setItem("token", response.data.token);
+    }
+
+    return response;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export default api;

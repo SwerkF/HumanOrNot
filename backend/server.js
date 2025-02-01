@@ -211,12 +211,6 @@ wss.on("connection", (ws, req) => {
       const messagesS = await Message.insertMany(prepareMessages);
 
       let gameInfo = games[message.gameId];
-      console.log("GAME INFO", gameInfo);
-      console.log("USER ONE ID", gameInfo.wsUserOne.id);
-      console.log(
-        "USER TWO ID",
-        gameInfo.wsUserTwo ? gameInfo.wsUserTwo.id : null
-      );
 
       const gameS = await Game.create({
         gameId: message.gameId,
@@ -261,5 +255,6 @@ mongoose
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Serveur lance sur le port " + PORT);
+  console.log(`Backend URL: http://localhost:${PORT}`);
+  console.log(`Websocket URL: ws://localhost:${process.env.PORT_WS}`);
 });

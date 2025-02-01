@@ -51,7 +51,6 @@ export default function Game() {
     };
     ws.onmessage = (message) => {
       const data = JSON.parse(message.data);
-      console.log(data);
       // Début de partie
       if (data.type === "start_game") {
         // Mettre à jour les states
@@ -67,7 +66,6 @@ export default function Game() {
 
         setGameState("in_progress");
       } else if (data.type === "message_human" || data.type === "message_bot") {
-        console.log(data);
         setMessages((prev) => [
           ...prev,
           {
@@ -95,10 +93,6 @@ export default function Game() {
   }, []);
 
   const handleSendMessage = () => {
-    if (!message || !gameId || !userGameId) {
-      console.log("Message, gameId or userGameId is missing");
-      return console.log(message, gameId, userGameId);
-    }
     if (againstBot) {
       ws?.send(
         JSON.stringify({

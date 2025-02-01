@@ -43,7 +43,7 @@ export default function Stats() {
 
   useEffect(() => {
     dispatch(getGames());
-  }, [dispatch]);
+  }, []);
 
   // Data processing
   const last6Months = [...Array(6)]

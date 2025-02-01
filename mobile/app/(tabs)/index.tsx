@@ -1,13 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import Button from "@/components/ui/Button/Button";
 import { Colors } from "@/constants/Colors";
 import { useRouter } from "expo-router";
 import { useAppSelector } from "@/hooks/useAppSelector";
 import { RootState } from "@/redux/store";
+import { useAppDispatch } from "@/hooks/useAppDispatch";
+import { logout } from "@/redux/slices/userSlices";
 
 const Home = () => {
   const router = useRouter();
+  const { isAuth } = useAppSelector((state: RootState) => state.auth);
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (!isAuth) {
+      router.navigate("/login");
+    }
+  }, [isAuth]);
+
+  const handleLogout = () => {
+    dispatch(logout());
+  };
 
   return (
     <View className="min-h-screen bg-black w-full flex flex-col items-center justify-center">
@@ -30,6 +44,11 @@ const Home = () => {
           label="Voir mes stats"
           onClick={() => router.navigate("/stats")}
         />
+        <Pressable onPress={() => handleLogout()}>
+          <Text className="text-white text-xs md:text-md mb-5">
+            Se déconnecter
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
